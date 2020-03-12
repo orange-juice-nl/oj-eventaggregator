@@ -1,6 +1,6 @@
 {
   "name": "oj-eventaggregator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "EventAggregator pattern. Use it in NodeJS and the browser.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
