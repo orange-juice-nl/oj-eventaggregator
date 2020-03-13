@@ -1,12 +1,20 @@
 {
   "name": "oj-eventaggregator",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "homepage": "https://www.orange-juice.nl",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/orange-juice-nl/oj-eventaggregator.git"
+    "type": "git",
+    "url": "https://github.com/orange-juice-nl/oj-eventaggregator.git"
   },
-  "keywords": ["event", "subscribe", "publish", "emit", "listen", "aggregate", "aggregator"],
+  "keywords": [
+    "event",
+    "subscribe",
+    "publish",
+    "emit",
+    "listen",
+    "aggregate",
+    "aggregator"
+  ],
   "description": "EventAggregator pattern. Use it in NodeJS and the browser.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
