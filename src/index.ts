@@ -37,7 +37,10 @@ export class EventAggregator<Events extends string> {
   }
 
   public off(event: Events | "*", fn?: Subscriber) {
-    if (typeof fn !== "function") this.subs[event].length = 0
+    if (typeof fn !== "function") {
+      if (this.subs[event])
+        this.subs[event].length = 0
+    }
     else {
       const i = this.subs[event].indexOf(fn)
       this.subs[event].splice(i, 1)
