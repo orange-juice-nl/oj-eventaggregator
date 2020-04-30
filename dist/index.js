@@ -36,8 +36,10 @@ var EventAggregator = /** @class */ (function () {
         return offs;
     };
     EventAggregator.prototype.off = function (event, fn) {
-        if (typeof fn !== "function")
-            this.subs[event].length = 0;
+        if (typeof fn !== "function") {
+            if (this.subs[event])
+                this.subs[event].length = 0;
+        }
         else {
             var i = this.subs[event].indexOf(fn);
             this.subs[event].splice(i, 1);
