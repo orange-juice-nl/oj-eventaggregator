@@ -1,6 +1,6 @@
 {
   "name": "oj-eventaggregator",
-  "version": "1.0.3",
+  "version": "2.0.1",
   "homepage": "https://www.orange-juice.nl",
   "repository": {
     "type": "git",
@@ -23,6 +23,5 @@
     "share": "npm upgrade && npm version patch -force && npm run build && npm publish --registry https://registry.npmjs.org"
   },
   "author": "Marius Linders @ Orange Juice<marius.linders@orange-juice.nl>",
-  "license": "MIT",
-  "dependencies": {}
+  "license": "MIT"
 }
