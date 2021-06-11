@@ -1,101 +1,91 @@
-export type Subscriber = (data: any, event: string) => any
-export type Middleware = (data: any, event: string) => any | null
-export type Subscriptions = { [event: string]: Subscriber[] }
+type SubscriberFunction<Events extends Record<string, unknown>, K extends keyof Events> = (data: Events[K], event: K | "*") => any
 
-export class EventAggregator<Events extends string> {
-  private subs: Subscriptions = {};
-  private middlewares: Subscriptions = {};
+type Subscriber<Events extends Record<string, unknown>, K extends keyof Events> = {
+  fn: SubscriberFunction<Events, K>
+  off: () => void
+  pause: () => void
+  resume: () => void
+  paused?: boolean
+}
+export class EventAggregator<Events extends Record<string, unknown>> {
+  events: Record<keyof Events, Subscriber<Events, keyof Events>[]> = {} as any
 
-  public on(event: Events | "*", fn: Subscriber): () => this {
-    if (!this.subs[event]) this.subs[event] = []
-    this.subs[event].push(fn)
-    return () => this.off(event, fn)
+  emit<K extends keyof Events>(event: K, data: Events[K]) {
+    if (!this.events[event])
+      return
+
+    this.events[event]
+      .filter(x => !x.paused)
+      .forEach(x => x.fn(data, event))
+
+    return this
   }
 
-  public onAll(events: Events[], fn: Subscriber) {
+  on<K extends keyof Events>(event: K, fn: SubscriberFunction<Events, K>) {
+    if (!this.events[event])
+      this.events[event] = []
+
+    const sub: Subscriber<Events, K> = {
+      fn,
+      off: () => this.off(event, sub),
+      pause: () => sub.paused = true,
+      resume: () => sub.paused = false,
+    }
+
+    this.events[event].push(sub as any)
+
+    return sub
+  }
+
+  once<K extends keyof Events>(event: K, fn: SubscriberFunction<Events, K>) {
+    const sub = this.on(event, data => {
+      sub.off()
+      fn(data, event)
+    })
+
+    return sub
+  }
+
+  off<K extends keyof Events>(event: K, sub: Subscriber<Events, K>) {
+    if (!this.events[event])
+      return
+
+    const i = this.events[event].indexOf(sub as any)
+    if (i === -1)
+      return
+
+    this.events[event].splice(i, 1)
+
+    return this
+  }
+
+  clear<K extends keyof Events>(event: K) {
+    this.events[event].forEach(x => x.off())
+
+    return this
+  }
+
+  emitAll<K extends Array<keyof Events>>(events: K, data: Events[K[0]]) {
+    events.forEach(event => this.emit(event, data))
+
+    return this
+  }
+
+  onAll<K extends Array<keyof Events>>(events: K, fn: SubscriberFunction<Events, K[0]>) {
     return events.map(event => this.on(event, data => fn(data, event)))
   }
 
-  public once(event: Events | "*", fn: Subscriber) {
-    const off = this.on(event, data => {
-      off()
-      fn(data, event)
-    })
-    return off
-  }
-
-  public onceAll(events: Events[], fn: Subscriber) {
-    return events.map(event => this.once(event, data => fn(data, event)))
-  }
-
-  public race(events: Events[], fn: Subscriber) {
-    const offs = events.map(event => this.on(event, data => {
-      offs.forEach(x => x())
+  onceAll<K extends Array<keyof Events>>(events: K, fn: SubscriberFunction<Events, K[0]>) {
+    const subs = events.map(event => this.once(event, data => {
+      subs.forEach(x => x.off())
       fn(data, event)
     }))
-    return offs
+    return subs
   }
 
-  public off(event: Events | "*", fn?: Subscriber) {
-    if (typeof fn !== "function") this.subs[event].length = 0
-    else {
-      const i = this.subs[event].indexOf(fn)
-      this.subs[event].splice(i, 1)
-    }
+  clearAll<K extends Array<keyof Events>>(events: K) {
+    events.forEach(event => this.clear(event))
+
     return this
   }
-
-  public offAll(events: Events[], fn?: Subscriber) {
-    events.forEach(event => this.off(event, fn))
-    return this
-  }
-
-  public emit(event: Events, data?: any) {
-    data = this.emitMiddlewares(event, data)
-    if (data === null) return this
-    if (this.subs[event]) this.subs[event].forEach(sub => sub(data, event))
-    if (this.subs["*"]) this.subs["*"].forEach(sub => sub(data, event))
-    return this
-  }
-
-  public emitAll(events: Events[], data?: any) {
-    events.map(event => this.emit(event, data))
-    return this
-  }
-
-  public getAllSubs() {
-    return Object.keys(this.subs) as Events[]
-  }
-
-  public middleware(event: Events | "*", fn: Middleware) {
-    if (!this.middlewares[event]) this.middlewares[event] = []
-    this.middlewares[event].push(fn)
-    return () => {
-      const i = this.middlewares[event].indexOf(fn)
-      this.middlewares[event].splice(i, 1)
-    }
-  }
-
-  private emitMiddlewares(event: Events, data: any) {
-    const mw = (e, d) => {
-      if (!this.middlewares[e]) return d
-      if (d === null) return null
-      for (let i = 0; i < this.middlewares[e].length; i++) {
-        d = this.middlewares[e][i](d, event)
-        if (d === null) return null
-      }
-      return d
-    }
-
-    data = mw(event, data)
-    data = mw("*", data)
-    return data
-  }
-}
-
-
-const instances: { [k: string]: EventAggregator<string> } = {}
-export const getEA = (name: string) => {
-  if (!instances[name]) instances[name] = new EventAggregator()
-  return instances[name]
 }

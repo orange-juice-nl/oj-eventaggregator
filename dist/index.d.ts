@@ -1,22 +1,21 @@
-export declare type Subscriber = (data: any, event: string) => any;
-export declare type Middleware = (data: any, event: string) => any | null;
-export declare type Subscriptions = {
-    [event: string]: Subscriber[];
+declare type SubscriberFunction<Events extends Record<string, unknown>, K extends keyof Events> = (data: Events[K], event: K | "*") => any;
+declare type Subscriber<Events extends Record<string, unknown>, K extends keyof Events> = {
+    fn: SubscriberFunction<Events, K>;
+    off: () => void;
+    pause: () => void;
+    resume: () => void;
+    paused?: boolean;
 };
-export declare class EventAggregator<Events extends string> {
-    private subs;
-    private middlewares;
-    on(event: Events | "*", fn: Subscriber): () => this;
-    onAll(events: Events[], fn: Subscriber): (() => this)[];
-    once(event: Events | "*", fn: Subscriber): () => this;
-    onceAll(events: Events[], fn: Subscriber): (() => this)[];
-    race(events: Events[], fn: Subscriber): (() => this)[];
-    off(event: Events | "*", fn?: Subscriber): this;
-    offAll(events: Events[], fn?: Subscriber): this;
-    emit(event: Events, data?: any): this;
-    emitAll(events: Events[], data?: any): this;
-    getAllSubs(): Events[];
-    middleware(event: Events | "*", fn: Middleware): () => void;
-    private emitMiddlewares;
+export declare class EventAggregator<Events extends Record<string, unknown>> {
+    events: Record<keyof Events, Subscriber<Events, keyof Events>[]>;
+    emit<K extends keyof Events>(event: K, data: Events[K]): this;
+    on<K extends keyof Events>(event: K, fn: SubscriberFunction<Events, K>): Subscriber<Events, K>;
+    once<K extends keyof Events>(event: K, fn: SubscriberFunction<Events, K>): Subscriber<Events, K>;
+    off<K extends keyof Events>(event: K, sub: Subscriber<Events, K>): this;
+    clear<K extends keyof Events>(event: K): this;
+    emitAll<K extends Array<keyof Events>>(events: K, data: Events[K[0]]): this;
+    onAll<K extends Array<keyof Events>>(events: K, fn: SubscriberFunction<Events, K[0]>): Subscriber<Events, keyof Events>[];
+    onceAll<K extends Array<keyof Events>>(events: K, fn: SubscriberFunction<Events, K[0]>): Subscriber<Events, keyof Events>[];
+    clearAll<K extends Array<keyof Events>>(events: K): this;
 }
-export declare const getEA: (name: string) => EventAggregator<string>;
+export {};
