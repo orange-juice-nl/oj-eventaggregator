@@ -4,19 +4,21 @@ exports.EventAggregator = void 0;
 var EventAggregator = /** @class */ (function () {
     function EventAggregator() {
         this.events = {};
+        this.paused = false;
     }
     EventAggregator.prototype.emit = function (event, data) {
-        if (!this.events[event])
-            return;
-        this.events[event]
-            .filter(function (x) { return !x.paused; })
-            .forEach(function (x) { return x.fn(data, event); });
+        var _a, _b;
+        if (this.paused)
+            return this;
+        (_a = this.events[event]) === null || _a === void 0 ? void 0 : _a.filter(function (x) { return !x.paused; }).forEach(function (x) { return x.fn(data, event); });
+        (_b = this.events["*"]) === null || _b === void 0 ? void 0 : _b.filter(function (x) { return !x.paused; }).forEach(function (x) { return x.fn(data, event); });
         return this;
     };
     EventAggregator.prototype.on = function (event, fn) {
         var _this = this;
-        if (!this.events[event])
-            this.events[event] = [];
+        var _a;
+        var _b;
+        (_a = (_b = this.events)[event]) !== null && _a !== void 0 ? _a : (_b[event] = []);
         var sub = {
             fn: fn,
             off: function () { return _this.off(event, sub); },
@@ -27,9 +29,9 @@ var EventAggregator = /** @class */ (function () {
         return sub;
     };
     EventAggregator.prototype.once = function (event, fn) {
-        var sub = this.on(event, function (data) {
+        var sub = this.on(event, function (d, e) {
             sub.off();
-            fn(data, event);
+            fn(d, e);
         });
         return sub;
     };
@@ -46,26 +48,34 @@ var EventAggregator = /** @class */ (function () {
         this.events[event].forEach(function (x) { return x.off(); });
         return this;
     };
-    EventAggregator.prototype.emitAll = function (events, data) {
+    EventAggregator.prototype.emitMultiple = function (events, data) {
         var _this = this;
         events.forEach(function (event) { return _this.emit(event, data); });
         return this;
     };
-    EventAggregator.prototype.onAll = function (events, fn) {
+    EventAggregator.prototype.onMultiple = function (events, fn) {
         var _this = this;
-        return events.map(function (event) { return _this.on(event, function (data) { return fn(data, event); }); });
+        return events.map(function (event) { return _this.on(event, function (d, e) { return fn(d, e); }); });
     };
-    EventAggregator.prototype.onceAll = function (events, fn) {
+    EventAggregator.prototype.onceMultiple = function (events, fn) {
         var _this = this;
-        var subs = events.map(function (event) { return _this.once(event, function (data) {
+        var subs = events.map(function (event) { return _this.once(event, function (d, e) {
             subs.forEach(function (x) { return x.off(); });
-            fn(data, event);
+            fn(d, e);
         }); });
         return subs;
     };
-    EventAggregator.prototype.clearAll = function (events) {
+    EventAggregator.prototype.clearMultiple = function (events) {
         var _this = this;
         events.forEach(function (event) { return _this.clear(event); });
+        return this;
+    };
+    EventAggregator.prototype.pause = function () {
+        this.paused = true;
+        return this;
+    };
+    EventAggregator.prototype.resume = function () {
+        this.paused = false;
         return this;
     };
     return EventAggregator;
